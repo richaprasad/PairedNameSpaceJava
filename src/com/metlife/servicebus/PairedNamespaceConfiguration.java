@@ -40,6 +40,9 @@ public class PairedNamespaceConfiguration {
 	public static final String SECONDARY_DEADQUEUE2 = "DEADQUEUE2";
 	/* ----   End of Servicebus properties       --------*/
 	
+	
+	public static final String PRIMARY_SBCF12 = "SBCF12";  // TODO
+	
 //	public static final long PING_INTERVAL = 60000;		// 1 minute
 
 }

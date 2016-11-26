@@ -64,9 +64,21 @@ public class Test {
 		MessageSender messageSender = primary.getMessageSender();
 		
 		String text = " This is a test message sent from Java";
-		for (int i = 0; i < 10; i++) {
+		for (int i = 1; i <= 10; i++) {
 			String msg = i + text;
 			try {
+				if(!MessagingFactory.primaryDown && (messageSender != null)) {
+					messageSender = primary.getMessageSender();
+				}
+				
+				// -----------Code to del-----------------
+				if(i == 4) {
+					primary.setMessageSender(primary.createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE));
+					MessagingFactory.primaryDown = false;
+					SendAvailabilityPairedNamespaceOptions.syphoneTask.start();
+				} 
+				// ----------------------------
+				
 				messageSender.sendMessage(msg);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -91,6 +103,7 @@ public class Test {
 				} catch (NamespaceException e1) {
 					e1.printStackTrace();
 				}
+				
 			}
 		}
 		try {

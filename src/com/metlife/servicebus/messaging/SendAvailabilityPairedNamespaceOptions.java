@@ -46,6 +46,11 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		super(secondaryNamespaceManager, messagingFactory, failoverInterval);
 		this.backlogQueueCount = backlogQueueCount;
 		this.enableSyphon = enableSyphon;
+		try {
+			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(60000);	// 1 minute
+		} catch (DatatypeConfigurationException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/* (non-Javadoc)

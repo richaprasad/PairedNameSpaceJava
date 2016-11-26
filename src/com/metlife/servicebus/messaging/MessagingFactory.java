@@ -81,7 +81,7 @@ public class MessagingFactory {
 					try {
 						while(messageSender == null) {
 							System.err.println("Message Sender is null, trying to create before ping...");
-							messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_QUEUE);
+							messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE);
 							try {
 								Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
 							} catch (InterruptedException e1) {
@@ -151,9 +151,9 @@ public class MessagingFactory {
 		return pairNamespaceTask;
 	}
 	
-	public MessageSender createMessageSender(String queue) {
+	public MessageSender createMessageSender(String cf, String queue) {
 		try {
-			return new MessageSender(connectionfactory, queue);
+			return new MessageSender(cf, queue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -185,7 +185,7 @@ public class MessagingFactory {
 		System.err.println("Backlog queue created");
 		
 		//  create primary message sender
-		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_QUEUE);
+		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF12, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO 
 		if(messageSender != null) {
 			System.err.println("Message sender created");
 			
@@ -197,7 +197,7 @@ public class MessagingFactory {
 	
 	private void handleFailure(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		// Primary is down, start ping task
-		pingTask.start();
+//		pingTask.start();
 		
 		// Stop Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons != null) {
@@ -208,7 +208,7 @@ public class MessagingFactory {
 		while(pairedNamespaceOptions.secondaryMessagingFactory.messageSender == null) {
 			String backlogQueue = chooseRandomBacklogQueue(pairedNamespaceOptions);
 			pairedNamespaceOptions.secondaryMessagingFactory.messageSender = 
-					pairedNamespaceOptions.secondaryMessagingFactory.createMessageSender(backlogQueue);
+					pairedNamespaceOptions.secondaryMessagingFactory.createMessageSender(PairedNamespaceConfiguration.SECONDARY_SBCF, backlogQueue);
 		}
 		secondaryUp = true;
 	}
@@ -229,7 +229,7 @@ public class MessagingFactory {
 			} else {
 				// throw error, backlog queue does not exists
 				System.err.print("Backlog queue: " + queueName + " does not exists. Please create in portal.");
-			    System.exit(-1);
+			    System.exit(-1); // TODO
 			}
 		}
 	}
