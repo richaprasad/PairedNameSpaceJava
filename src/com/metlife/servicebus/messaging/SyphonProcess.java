@@ -40,6 +40,7 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
     private String queueName;
     
     private MessageSender sender;
+    private boolean active = true;
 	
 	/**
 	 * @throws IOException 
@@ -95,11 +96,13 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 
 	@Override
 	public void onException(JMSException exception) {
-		System.err.println("Error in connection, Retrying to connect...");
-		try {
-			initializeConnection();
-		} catch (JMSException e) {
-			System.err.println(e.getLocalizedMessage());
+		if(active) {
+			System.err.println("Error in connection, Retrying to connect...");
+			try {
+				initializeConnection();
+			} catch (JMSException e) {
+				System.err.println(e.getLocalizedMessage());
+			}
 		}
 	}
 
@@ -135,6 +138,7 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 	 * @throws JMSException
 	 */
 	public void closeSyphon() throws JMSException {
+		active = false;
 		if(connection != null) {
 			connection.stop();
 		}

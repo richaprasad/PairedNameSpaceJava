@@ -82,13 +82,40 @@ public class MessageReceiver implements MessageListener, ExceptionListener {
 
 	@Override
 	public void onException(JMSException exception) {
-		System.err.println("Error in connection, Retrying to connect...");
+		System.err.println("Error in receiver connection, Retrying to connect...");
+		try {
+			close();
+		} catch (JMSException e1) {	
+			// We will get an Exception anyway, since the connection to the server is
+            // broken, but close() frees up resources associated with the connection
+		}
+		
 		try {
 			initializeConnection();
 		} catch (JMSException e) {
 			System.err.println(e.getLocalizedMessage());
 		}
 	}
+	
+	 /**
+     * Close all active connections
+     * @throws JMSException
+     */
+	public void close() throws JMSException {
+        if(receiver != null) {
+        	receiver.setMessageListener(null);
+        	receiver.close();
+        }
+        if(receiveSession != null) {
+        	receiveSession.close();
+        }
+    	if(connection!= null) {
+    		connection.close();
+    	}
+    	connection = null;
+    	receiveSession = null;
+    	receiver = null;
+    }
 
 	private void initializeConnection() throws JMSException {
 		 // Create Connection

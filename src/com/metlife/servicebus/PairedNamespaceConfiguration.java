@@ -18,13 +18,12 @@ public class PairedNamespaceConfiguration {
 	public static String SECONDARY_ROOT_URI = ".servicebus.windows.net"; 
 	
 	public static final String BACKLOG_QUEUE1 = 
-//			"mljsbpoc/x-servicebus-transfer/0";
-			"testqueuejw";
+			"x-servicebus-transfer-0";
+			
 	public static final String BACKLOG_QUEUE2 = 
-//			"mljsbpoc/x-servicebus-transfer/1";
-			"testqueuejw2";
+			"x-servicebus-transfer-1";
 	
-	public static final String BACKLOG_QUEUE_EXT = "/x-servicebus-transfer/";
+	public static final String BACKLOG_QUEUE_EXT = "x-servicebus-transfer-";
 	public static final int BACKLOG_QUEUE_COUNT = 2;
 	public static int FAILOVER_INTERVAL_SECONDS = 0;
 	

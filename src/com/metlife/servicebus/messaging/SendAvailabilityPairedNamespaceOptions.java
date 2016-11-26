@@ -4,7 +4,6 @@
 package com.metlife.servicebus.messaging;
 
 import java.io.IOException;
-import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	 */
 	@Override
 	protected void onNotifyPrimarySendResult(String path, boolean success) {
-		if(syphoneTask.getState() == State.NEW) {
+		if(success && syphons == null) {
 			syphoneTask.start();
 		}
 	}
@@ -62,7 +61,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	public void markPathHealthy(String path) {
 		if(StringUtil.isNotNullOrEmpty(path)) {
 			if(path.equalsIgnoreCase(PairedNamespaceConfiguration.PRIMARY_QUEUE)) {
-				// TODO
+				// TODO mark path healthy
 			}
 		}
 	}
@@ -114,8 +113,17 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		
 		@Override
 		public void run() {
-//			syphoneTask.setDaemon(true);
 			syphons = createSyphon();
+		}
+	});
+	
+    public static Thread stopSyphoneTask = new Thread(new Runnable() {
+		
+		@Override
+		public void run() {
+			if(syphons != null) {
+				stopSyphon();
+			}
 		}
 	});
 	
@@ -153,9 +161,11 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	 */
 	public static void stopSyphon() {
 		if(syphons != null) {
+			System.out.println("Stopping Syphon...");
 			for ( SyphonProcess syphon : syphons) {
 				try {
 					syphon.closeSyphon();
+					syphon = null;
 				} catch (JMSException e) {
 					e.printStackTrace();
 				}

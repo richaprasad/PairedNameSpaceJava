@@ -48,19 +48,20 @@ public class Test {
 						failoverInterval,
 						true);
 		
-		final Object lock = new Object();
-		Thread task = null;
-		synchronized (lock) {
-			task = primary.pairNamespaceAsync(sendAvailabilityOptions);
+		// Start pair namespace task and wait until it completes successfully.
+		Thread task = primary.pairNamespaceAsync(sendAvailabilityOptions);
+		synchronized (task) {
 			try {
-				lock.wait(10000);	//	wait until pairNamespace task completes
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+				task.wait();           // wait() should always be in synch block
+		    } catch (InterruptedException e) {
+			    e.printStackTrace();
+		    }
 		}
 		
+		System.out.println("Task isAlive: " + task.isAlive());
+		
+		// Get Primary message sender
 		MessageSender messageSender = primary.getMessageSender();
-//		messageSender.pingMessage();
 		
 		String text = " This is a test message sent from Java";
 		for (int i = 0; i < 10; i++) {
@@ -68,16 +69,21 @@ public class Test {
 			try {
 				messageSender.sendMessage(msg);
 			} catch (Exception e) {
-//				System.err.println(e.getMessage());
 				e.printStackTrace();
-				synchronized(task) {
-					task.notifyAll();
+				
+				// If unable to send to primary, it means primary is down, 
+				// start handle failure task and wait until it completes
+				MessagingFactory.primaryDown = true;
+				primary.handleFailureTask.start();
+				
+				synchronized(primary.handleFailureTask) {
 					try {
-						task.wait(10000);	//	wait until backlog queue selected
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
+						primary.handleFailureTask.wait();   //	wait until backlog queue selected
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
 					}
 				}
+				// Get secondary message sender
 				messageSender = sendAvailabilityOptions.getSecondaryMessagingFactory().getMessageSender();
 				
 				try {
@@ -93,6 +99,7 @@ public class Test {
 			e.printStackTrace();
 		}
 		primary.createMessageReceiver(PairedNamespaceConfiguration.PRIMARY_QUEUE);
+		System.out.println("Receiver...");
 	}
 
 }
