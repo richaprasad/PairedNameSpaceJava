@@ -71,14 +71,6 @@ public class Test {
 					messageSender = primary.getMessageSender();
 				}
 				
-				// -----------Code to del-----------------
-				if(i == 4) {
-					primary.setMessageSender(primary.createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE));
-					MessagingFactory.primaryDown = false;
-					SendAvailabilityPairedNamespaceOptions.syphoneTask.start();
-				} 
-				// ----------------------------
-				
 				messageSender.sendMessage(msg);
 			} catch (Exception e) {
 				e.printStackTrace();
