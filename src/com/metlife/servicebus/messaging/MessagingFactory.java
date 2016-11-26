@@ -197,7 +197,7 @@ public class MessagingFactory {
 	
 	private void handleFailure(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		// Primary is down, start ping task
-//		pingTask.start();
+		pingTask.start();
 		
 		// Stop Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons != null) {
