@@ -129,7 +129,6 @@ public class MessageSender implements ExceptionListener {
 				retrySendMessage(message, retryCount);	// Retry 
 			} catch (JMSException ex) {
 				System.err.println(ex.getLocalizedMessage());
-				// TODO paired name space
 				throw new NamespaceException("Namespace is down");
 			}
 		}
@@ -152,13 +151,7 @@ public class MessageSender implements ExceptionListener {
 				if(retry < MAX_RETRY) {
 					retrySendMessage(message, retry);
 				} else {
-					// TODO paired name space
 					throw new NamespaceException("Retry limit exhausted, Namespace is down");
-/*					try {
-						MessageSender.class.wait();
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-					}*/
 				}
 			}
 		}

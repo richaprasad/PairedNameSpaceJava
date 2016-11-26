@@ -15,7 +15,6 @@ import javax.xml.datatype.Duration;
 
 import com.metlife.servicebus.NamespaceManager;
 import com.metlife.servicebus.PairedNamespaceConfiguration;
-import com.metlife.servicebus.messaging.util.StringUtil;
 
 /**
  * @author rprasad017
@@ -60,14 +59,6 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	protected void onNotifyPrimarySendResult(String path, boolean success) {
 		if(success && syphons == null) {
 			syphoneTask.start();
-		}
-	}
-	
-	public void markPathHealthy(String path) {
-		if(StringUtil.isNotNullOrEmpty(path)) {
-			if(path.equalsIgnoreCase(PairedNamespaceConfiguration.PRIMARY_QUEUE)) {
-				// TODO mark path healthy
-			}
 		}
 	}
 	

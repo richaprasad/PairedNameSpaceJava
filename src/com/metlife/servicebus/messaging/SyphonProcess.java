@@ -54,7 +54,7 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 		this.queueName = queueName;
 		
 		sender = new MessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, 
-				PairedNamespaceConfiguration.PRIMARY_QUEUE); 	// TODO, created new sender. retieve orginal sender/ one sender for backlog queues
+				PairedNamespaceConfiguration.PRIMARY_QUEUE); 	
 		
 		initReceiver();
 		System.err.println("Syphon process is ready");

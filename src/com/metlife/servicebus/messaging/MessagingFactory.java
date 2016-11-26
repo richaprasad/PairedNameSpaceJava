@@ -82,10 +82,12 @@ public class MessagingFactory {
 						while(messageSender == null) {
 							System.err.println("Message Sender is null, trying to create before ping...");
 							messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE);
-							try {
-								Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
-							} catch (InterruptedException e1) {
-								System.err.println(e1.getLocalizedMessage());
+							if(messageSender == null) {
+								try {
+									Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
+								} catch (InterruptedException e1) {
+									System.err.println(e1.getLocalizedMessage());
+								}
 							}
 						}
 						while(!messageSender.pingMessage()) {
@@ -95,9 +97,8 @@ public class MessagingFactory {
 								System.err.println(e1.getLocalizedMessage());
 							}
 						} 
-						pairedNamespaceOptions.markPathHealthy(PairedNamespaceConfiguration.PRIMARY_QUEUE);
 						pairedNamespaceOptions.onNotifyPrimarySendResult(PairedNamespaceConfiguration.PRIMARY_QUEUE, true);
-						primaryDown = false;
+						primaryDown = false; // Mark primary healthy
 						pingTask.notify();
 					} catch (JMSException e) {
 						e.printStackTrace();
@@ -170,7 +171,7 @@ public class MessagingFactory {
 	}
 	
 	public void ResetConnection() {
-		// TODO Reset connection
+		// TODO Reset connection - Fault behavior
 	}
 	
 	private void initializePairingTask(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
@@ -185,7 +186,7 @@ public class MessagingFactory {
 		System.err.println("Backlog queue created");
 		
 		//  create primary message sender
-		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF12, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO 
+		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF12, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO correct connection factory 
 		if(messageSender != null) {
 			System.err.println("Message sender created");
 			
@@ -229,7 +230,7 @@ public class MessagingFactory {
 			} else {
 				// throw error, backlog queue does not exists
 				System.err.print("Backlog queue: " + queueName + " does not exists. Please create in portal.");
-			    System.exit(-1); // TODO
+			    System.exit(-1); // TODO Fault behavior
 			}
 		}
 	}
