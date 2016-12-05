@@ -89,7 +89,6 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 				msg = null;
 			}
         } catch (Exception e) {
-//        	System.err.println(e.getLocalizedMessage());
         	e.printStackTrace();
         }
 	}
@@ -118,7 +117,7 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 	}
 	
 	/**
-	 * Modify message property to sit in the backlog queue
+	 * Restore the Modified message property from the backlog queue
 	 * @param message
 	 * @throws JMSException
 	 */

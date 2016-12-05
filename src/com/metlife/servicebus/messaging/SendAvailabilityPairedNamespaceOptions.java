@@ -3,12 +3,10 @@
  */
 package com.metlife.servicebus.messaging;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.jms.JMSException;
-import javax.naming.NamingException;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.Duration;
@@ -18,7 +16,7 @@ import com.metlife.servicebus.PairedNamespaceConfiguration;
 
 /**
  * @author rprasad017
- *
+ * Pairing options
  */
 public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptions {
 	
@@ -26,16 +24,6 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	protected boolean enableSyphon;
 	protected Duration pingPrimaryInterval;
 
-	public SendAvailabilityPairedNamespaceOptions(
-			NamespaceManager namespaceManager, MessagingFactory messagingFactory) {
-		super(namespaceManager, messagingFactory);
-		try {
-			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(PairedNamespaceConfiguration.PING_INTERVAL);
-		} catch (DatatypeConfigurationException e) {
-			e.printStackTrace();
-		}
-	}
-	
 	public SendAvailabilityPairedNamespaceOptions(
 		    NamespaceManager secondaryNamespaceManager,
 		    MessagingFactory messagingFactory,
@@ -46,7 +34,8 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		this.backlogQueueCount = backlogQueueCount;
 		this.enableSyphon = enableSyphon;
 		try {
-			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(PairedNamespaceConfiguration.PING_INTERVAL);
+			pingPrimaryInterval = DatatypeFactory.newInstance()
+					.newDuration(PairedNamespaceConfiguration.PING_INTERVAL);
 		} catch (DatatypeConfigurationException e) {
 			e.printStackTrace();
 		}
@@ -110,8 +99,10 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	public void setPingPrimaryInterval(Duration pingPrimaryInterval) {
 		this.pingPrimaryInterval = pingPrimaryInterval;
 	}
+	
 	public static List<SyphonProcess> syphons = null;
 	
+	// Creates Syphon task
 	public static Thread syphoneTask = new Thread(new Runnable() {
 		
 		@Override
@@ -133,6 +124,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		}
 	});
 	
+	// Stop Syphon task
     public static Thread stopSyphonTask = new Thread(new Runnable() {
 		
 		@Override
@@ -172,11 +164,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 			processes.add(syphonProcess1);
 			processes.add(syphonProcess2);
 			return processes;
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (NamingException e) {
-			e.printStackTrace();
-		} catch (JMSException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;

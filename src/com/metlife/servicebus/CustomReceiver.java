@@ -3,7 +3,12 @@
  */
 package com.metlife.servicebus;
 
-import com.metlife.servicebus.messaging.MessagingFactory;
+import java.io.IOException;
+
+import javax.jms.JMSException;
+import javax.naming.NamingException;
+
+import com.metlife.servicebus.messaging.MessageReceiver;
 
 /**
  * @author rprasad017
@@ -11,16 +16,9 @@ import com.metlife.servicebus.messaging.MessagingFactory;
  */
 public class CustomReceiver {
 	
-	private MessagingFactory primary;
-
-	public CustomReceiver() {
-		primary = MessagingFactory.createFromConnectionSettings(
-				PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE);
-		primary.createMessageReceiver(PairedNamespaceConfiguration.PRIMARY_QUEUE);
+	public static void main(String[] args) throws IOException, NamingException, JMSException {
+		new MessageReceiver(PairedNamespaceConfiguration.PRIMARY_SBCF, 
+				PairedNamespaceConfiguration.PRIMARY_QUEUE);
 		System.out.println("Receiver...");
-	}
-
-	public static void main(String[] args) {
-		new CustomReceiver();
 	}
 }

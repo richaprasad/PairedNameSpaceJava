@@ -24,7 +24,6 @@ public class MessagingFactory {
 	protected Thread pingTask;
 	protected Thread pairNamespaceTask;
 	public Thread handleFailureTask;
-//	public Thread switchToPrimaryTask;
 	public Thread faultBehaviourTask;
 	
 	private static boolean initialized = false;
@@ -58,7 +57,6 @@ public class MessagingFactory {
 		
 		// Pair namespace task creation
 		pairNamespaceTask = new Thread(new Runnable() {
-			
 			@Override
 			public void run() {
 				synchronized (pairNamespaceTask) {
@@ -69,8 +67,6 @@ public class MessagingFactory {
 					}
 				}
 			}
-
-			
 		});
 		pairNamespaceTask.start();
 		
@@ -97,7 +93,6 @@ public class MessagingFactory {
 		});
 		
 		handleFailureTask = new Thread(new Runnable() {
-			
 			@Override
 			public void run() {
 				synchronized (handleFailureTask) {
@@ -117,27 +112,6 @@ public class MessagingFactory {
 			}
 		});
 		
-       /* switchToPrimaryTask = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				synchronized (switchToPrimaryTask) {
-					while(true) {
-						if(!primaryDown && secondaryUp) {
-							switchToPrimaryNamespace(pairedNamespaceOptions);
-							switchToPrimaryTask.notify();
-						} else {
-							try {
-								switchToPrimaryTask.wait();
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-						}
-					}
-				}
-			}
-		});*/
-		
         faultBehaviourTask = new Thread(new Runnable() {
 			
 			@Override
@@ -151,12 +125,16 @@ public class MessagingFactory {
 		return pairNamespaceTask;
 	}
 	
+	/**
+	 * Pings primary queue on every ping interval
+	 * @param pairedNamespaceOptions
+	 */
 	protected void handlePing(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		boolean pingSuccessful = false;
 		while(!pingSuccessful) {
 			try {
 				pingSuccessful = messageSender.pingMessage();
-				if(pingSuccessful) {
+				if(pingSuccessful) { // if ping successful, stop pinging
 					break;
 				}
 			} catch (Exception ex) {
@@ -171,27 +149,34 @@ public class MessagingFactory {
 					// Try to create new primary sender
 					handleCreatePrimarySender(pairedNamespaceOptions.pingPrimaryInterval);
 					try {
-						pingSuccessful = messageSender.pingMessage();
+						pingSuccessful = messageSender.pingMessage(); // Ping after sender is created
 					} catch (JMSException e) {
 						e.printStackTrace();
 					}
 				}
 			}
+			// wait ping interval
 			try {
 				Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
 			} catch (InterruptedException e1) {
 				System.err.println(e1.getLocalizedMessage());
 			}
 		} 
+		// Notify to continue syphon
 		pairedNamespaceOptions.onNotifyPrimarySendResult(PairedNamespaceConfiguration.PRIMARY_QUEUE, true);
 		primaryDown = false; // Mark primary healthy
 		pingTask.notify();
 	}
 
+	/**
+	 * This method tries to creates primary sender until it gets created
+	 * @param pingPrimaryInterval
+	 */
 	protected void handleCreatePrimarySender(Duration pingPrimaryInterval) {
 		while(messageSender == null) {
 			System.err.println("Message Sender is null, trying to create before ping...");
-			messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE);
+			messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF,
+					PairedNamespaceConfiguration.PRIMARY_QUEUE);
 			if(messageSender == null) {
 				try {
 					Thread.sleep(pingPrimaryInterval.getTimeInMillis(new Date()));
@@ -202,6 +187,12 @@ public class MessagingFactory {
 		}
 	}
 
+	/**
+	 * Creates Message Sender
+	 * @param cf
+	 * @param queue
+	 * @return
+	 */
 	public MessageSender createMessageSender(String cf, String queue) {
 		try {
 			return new MessageSender(cf, queue);
@@ -211,6 +202,11 @@ public class MessagingFactory {
 		return null;
 	}
 	
+	/**
+	 * Creates Message Receiver
+	 * @param queue
+	 * @return
+	 */
 	public MessageReceiver createMessageReceiver(String queue) {
 		try {
 			return new MessageReceiver(connectionfactory, queue);
@@ -224,6 +220,12 @@ public class MessagingFactory {
 		// TODO Reset connection - Fault behavior
 	}
 	
+	/**
+	 * Initialize pairing.
+	 * checks that all backlog queues exists, Primary sender is created.
+	 * It also starts syphon process
+	 * @param pairedNamespaceOptions
+	 */
 	private void initializePairingTask(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		int backlogQueueCount = pairedNamespaceOptions.getBacklogQueueCount();
 		if (backlogQueueCount < 1)
@@ -246,14 +248,17 @@ public class MessagingFactory {
 		initialized = true;
 	}
 	
+	/**
+	 * Handle failure of primary. 
+	 * It starts ping, stops syphon, and creates secondary message sender.
+	 * @param pairedNamespaceOptions
+	 */
 	private void handleFailure(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		// Primary is down, start ping task
 		System.out.println("PingTask state: " + pingTask.getState());
 		if(pingTask.getState() == Thread.State.NEW) {
 			pingTask.start();
-		} /*else if(pingTask.getState() == Thread.State.WAITING) {
-			pingTask.notify();
-		}*/
+		} 
 		
 		// Stop Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons != null) {
@@ -264,7 +269,8 @@ public class MessagingFactory {
 		while(pairedNamespaceOptions.secondaryMessagingFactory.messageSender == null) {
 			String backlogQueue = chooseRandomBacklogQueue(pairedNamespaceOptions);
 			pairedNamespaceOptions.secondaryMessagingFactory.messageSender = 
-					pairedNamespaceOptions.secondaryMessagingFactory.createMessageSender(PairedNamespaceConfiguration.SECONDARY_SBCF, backlogQueue);
+					pairedNamespaceOptions.secondaryMessagingFactory.createMessageSender(
+							PairedNamespaceConfiguration.SECONDARY_SBCF, backlogQueue);
 		}
 		secondaryUp = true;
 	}
@@ -290,6 +296,11 @@ public class MessagingFactory {
 		}
 	}
 
+	/**
+	 * Choose a backlog queue randomly
+	 * @param pairedNamespaceOptions
+	 * @return
+	 */
 	private String chooseRandomBacklogQueue(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		Random rand = new Random();
 		int index = rand.nextInt(pairedNamespaceOptions.backlogQueueCount);	

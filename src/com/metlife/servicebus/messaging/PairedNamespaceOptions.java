@@ -9,18 +9,13 @@ import com.metlife.servicebus.NamespaceManager;
 
 /**
  * @author rprasad017
- *
+ * Pairing options
  */
 public abstract class PairedNamespaceOptions {
 
 	protected Duration failoverInterval;
 	protected MessagingFactory secondaryMessagingFactory;
 	protected NamespaceManager secondaryNamespaceManager;	
-	
-	public PairedNamespaceOptions(NamespaceManager namespaceManager, MessagingFactory messagingFactory) {
-		secondaryNamespaceManager = namespaceManager;
-		secondaryMessagingFactory = messagingFactory;
-	}
 	
 	public PairedNamespaceOptions(NamespaceManager namespaceManager, 
 					MessagingFactory messagingFactory,

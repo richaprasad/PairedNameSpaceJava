@@ -21,10 +21,13 @@ public class CustomSender {
 	private MessagingFactory primary;
 	private MessagingFactory secondaryMessagingFactory;
 	private SendAvailabilityPairedNamespaceOptions sendAvailabilityOptions;
+	
+	private boolean enableSyphon = true;
 
 	public void send(String msg) {
 		try {
-			if(!MessagingFactory.primaryDown && MessagingFactory.secondaryUp && (messageSender != null)) {
+			if(!MessagingFactory.primaryDown && MessagingFactory.secondaryUp 
+					&& (primary.getMessageSender() != null)) {
 				messageSender = primary.getMessageSender();
 				MessagingFactory.secondaryUp = false;
 			}
@@ -36,7 +39,9 @@ public class CustomSender {
 			// If unable to send to primary, it means primary is down, 
 			// start handle failure task and wait until it completes
 			MessagingFactory.primaryDown = true;
+			
 			System.out.println("HandleFailureTask state: " + primary.handleFailureTask.getState());
+			
 			if(primary.handleFailureTask.getState() == Thread.State.NEW) {
 				primary.handleFailureTask.start();
 			} else if(primary.handleFailureTask.getState() == Thread.State.WAITING) {
@@ -81,7 +86,7 @@ public class CustomSender {
 						secondaryNamespaceManager, secondaryMessagingFactory,
 						PairedNamespaceConfiguration.BACKLOG_QUEUE_COUNT,
 						failoverInterval,
-						true);
+						enableSyphon);
 		
 		// Start pair namespace task and wait until it completes successfully.
 		Thread task = primary.pairNamespaceAsync(sendAvailabilityOptions);
