@@ -26,7 +26,7 @@ import com.metlife.servicebus.messaging.util.AppConstants;
 
 /**
  * @author rprasad017
- *
+ * Syphon
  */
 public class SyphonProcess implements MessageListener, ExceptionListener {
 	
@@ -159,9 +159,4 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 			sender = null;
 		}
 	}
-	
-	/*public static void main(String[] args) throws IOException, NamingException, JMSException {
-		new SyphonProcess("SBCF2", "QUEUE2");
-	}*/
-
 }

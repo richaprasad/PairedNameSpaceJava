@@ -14,11 +14,9 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
 
 /**
  * @author rprasad017
@@ -33,6 +31,9 @@ public class ReceiveDeadLetter {
     private ConnectionFactory cf;
     private Destination queue;
     
+    private String connectionfactory;
+    private String queueName;
+    
 	/**
 	 * @throws IOException 
 	 * @throws NamingException 
@@ -40,7 +41,14 @@ public class ReceiveDeadLetter {
 	 * @throws SecretKeyInitException 
 	 * 
 	 */
-	public ReceiveDeadLetter() throws IOException, NamingException, JMSException {
+	public ReceiveDeadLetter(String connectionfactory, String queueName) throws IOException, NamingException, JMSException {
+		this.connectionfactory = connectionfactory;
+		this.queueName = queueName;
+        
+        initDeadLetterReceiver();
+	}
+	
+	private void initDeadLetterReceiver() throws IOException, NamingException, JMSException {
 		// Configure JNDI environment
     	ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     	InputStream input = classLoader.getResourceAsStream("servicebus.properties");
@@ -50,11 +58,11 @@ public class ReceiveDeadLetter {
         Context context = new InitialContext(properties);
 
         // Lookup ConnectionFactory and Queue
-        cf = (ConnectionFactory) context.lookup("SBCF2");
-        queue = (Destination) context.lookup("DEADQUEUE1");
+        cf = (ConnectionFactory) context.lookup(connectionfactory);
+        queue = (Destination) context.lookup(queueName);
         initializeConnection();
 	}
-	
+
 	/**
 	 * Initialize connection
 	 * @throws JMSException
@@ -77,8 +85,7 @@ public class ReceiveDeadLetter {
 	 * @throws DecryptException 
 	 * @throws JMSException 
 	 */
-	public String getMessageFromQueue() throws IOException, JMSException {
-		String contents = null;
+	public void getMessageFromQueue() throws IOException, JMSException {
 		Message message = null;
 		synchronized (this) {
 			int count = 0;
@@ -88,7 +95,7 @@ public class ReceiveDeadLetter {
 					message = receiver.receive(5000);	// Receives the next message arrives
 													//	within the 5 seconds timeout interval.
 					if (message != null) {
-						contents = processMsg(message);		// start processing message
+						processMsg(message);		// start processing message
 						break;
 					}
 				} catch (InterruptedException e) {
@@ -97,7 +104,6 @@ public class ReceiveDeadLetter {
 				count++;
 			}
 		}
-		return contents;
     }
 
 	/**
@@ -109,7 +115,7 @@ public class ReceiveDeadLetter {
 	 * @throws UnZipException
 	 * @throws IOException 
 	 */
-	public synchronized String processMsg(Message message) throws JMSException, 
+	public synchronized void processMsg(Message message) throws JMSException, 
 									IOException {
         System.out.println("Received message with JMSMessageID = " + message.getJMSMessageID());
         
@@ -118,13 +124,7 @@ public class ReceiveDeadLetter {
     	System.out.println("Dead Letter Reason: " + reason);
     	System.out.println("Dead Letter Error Description: " + errDesc);
         
-        String contents = null;
-        if (message instanceof TextMessage) {
-        	TextMessage msg = (TextMessage) message;
-        	contents = msg.getText();
-        	message.acknowledge();
-        } 
-        return contents;
+        message.acknowledge();
 	}
 	
 	/**
@@ -152,7 +152,7 @@ public class ReceiveDeadLetter {
     }
 	
 	public static void main(String[] args) throws IOException, NamingException, JMSException {
-		ReceiveDeadLetter deadLetter =  new ReceiveDeadLetter();
+		ReceiveDeadLetter deadLetter =  new ReceiveDeadLetter("SBCF", "DEADQUEUE");
 		while(true) {
 			deadLetter.getMessageFromQueue();
 		}

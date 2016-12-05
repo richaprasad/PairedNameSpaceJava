@@ -23,7 +23,7 @@ import javax.naming.NamingException;
 
 /**
  * @author rprasad017
- *
+ * Class to receive messages asynchronously
  */
 public class MessageReceiver implements MessageListener, ExceptionListener {
 	
@@ -75,7 +75,6 @@ public class MessageReceiver implements MessageListener, ExceptionListener {
 				message.acknowledge();
 			}
         } catch (Exception e) {
-//        	System.err.println(e.getLocalizedMessage());
         	e.printStackTrace();
         }
 	}

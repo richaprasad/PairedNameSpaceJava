@@ -30,7 +30,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 			NamespaceManager namespaceManager, MessagingFactory messagingFactory) {
 		super(namespaceManager, messagingFactory);
 		try {
-			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(60000);	// 1 minute
+			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(PairedNamespaceConfiguration.PING_INTERVAL);
 		} catch (DatatypeConfigurationException e) {
 			e.printStackTrace();
 		}
@@ -46,7 +46,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		this.backlogQueueCount = backlogQueueCount;
 		this.enableSyphon = enableSyphon;
 		try {
-			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(60000);	// 1 minute
+			pingPrimaryInterval = DatatypeFactory.newInstance().newDuration(PairedNamespaceConfiguration.PING_INTERVAL);
 		} catch (DatatypeConfigurationException e) {
 			e.printStackTrace();
 		}

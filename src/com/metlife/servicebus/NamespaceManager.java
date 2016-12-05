@@ -22,7 +22,7 @@ import com.microsoft.windowsazure.services.servicebus.models.QueueInfo;
 
 /**
  * @author rprasad017
- *
+ * This class is used to ensure that backlog queues exists
  */
 public class NamespaceManager {
 	

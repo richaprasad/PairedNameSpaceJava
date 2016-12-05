@@ -221,32 +221,21 @@ public class MessageSender implements ExceptionListener {
 	 */
 	public boolean pingMessage() throws JMSException {
 		Message message = sendSession.createMessage();
-		message.setJMSExpiration(System.currentTimeMillis() + 1000);		// 1 sec
+		message.setJMSExpiration(System.currentTimeMillis() + 1000);	// 1 sec
 		message.setJMSType("application/vnd.ms-servicebus-ping");
 		try {
 			sender.send(message);
-			System.err.println("Ping successfull");
+			System.out.println("Ping successfull");
 			return true;
 		} catch (Exception e) {
 			System.err.println(e.getLocalizedMessage());
+		} finally {
+			message = null; // release resources
 		}
-		message = null;
 		return false;
 	}
 	
 	public TextMessage createPlainTextMessage() throws JMSException {
 		return sendSession.createTextMessage();
 	}
-	
-	/*public static void main(String[] args) throws IOException, NamingException, JMSException, NamespaceException {
-		MessageSender sender = new MessageSender("SBCF2", "QUEUE1");
-		String msg = "This is test message 1234";
-		TextMessage message = sender.createPlainTextMessage();
-		message.setJMSMessageID("ID:" + sender.generateMessageId());
-		message.setText(msg);
-		message.setLongProperty(AppConstants.TIME_TO_LIVE_PROP, 0);
-		sender.sendMessage(message);
-		
-	}*/
-
 }

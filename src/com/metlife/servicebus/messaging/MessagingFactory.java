@@ -236,7 +236,7 @@ public class MessagingFactory {
 		}
 		
 		//  create primary message sender
-		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO correct connection factory 
+		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE);  
 		if(messageSender != null) {
 			System.err.println("Message sender created");
 			
