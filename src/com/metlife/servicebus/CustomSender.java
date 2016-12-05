@@ -19,12 +19,14 @@ public class CustomSender {
 	
 	private MessageSender messageSender;
 	private MessagingFactory primary;
+	private MessagingFactory secondaryMessagingFactory;
 	private SendAvailabilityPairedNamespaceOptions sendAvailabilityOptions;
 
 	public void send(String msg) {
 		try {
-			if(!MessagingFactory.primaryDown && (messageSender != null)) {
+			if(!MessagingFactory.primaryDown && MessagingFactory.secondaryUp && (messageSender != null)) {
 				messageSender = primary.getMessageSender();
+				MessagingFactory.secondaryUp = false;
 			}
 			
 			messageSender.sendMessage(msg);
@@ -34,7 +36,14 @@ public class CustomSender {
 			// If unable to send to primary, it means primary is down, 
 			// start handle failure task and wait until it completes
 			MessagingFactory.primaryDown = true;
-			primary.handleFailureTask.start();
+			System.out.println("HandleFailureTask state: " + primary.handleFailureTask.getState());
+			if(primary.handleFailureTask.getState() == Thread.State.NEW) {
+				primary.handleFailureTask.start();
+			} else if(primary.handleFailureTask.getState() == Thread.State.WAITING) {
+				synchronized(primary.handleFailureTask) {
+					primary.handleFailureTask.notify();
+				}
+			}
 			
 			synchronized(primary.handleFailureTask) {
 				try {
@@ -54,7 +63,7 @@ public class CustomSender {
 		primary = MessagingFactory.createFromConnectionSettings(
 				PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE);
 		
-		MessagingFactory secondaryMessagingFactory =  MessagingFactory.createFromConnectionSettings(
+		secondaryMessagingFactory =  MessagingFactory.createFromConnectionSettings(
 				PairedNamespaceConfiguration.SECONDARY_SBCF, 
 				PairedNamespaceConfiguration.SECONDARY_QUEUE1,
 				PairedNamespaceConfiguration.SECONDARY_QUEUE2);
@@ -89,4 +98,15 @@ public class CustomSender {
 		messageSender = primary.getMessageSender();
 	}
 
+	
+	public void faultBehaviourMessageFactory() {
+		if((primary == null) && (secondaryMessagingFactory != null)) {
+			secondaryMessagingFactory.resetConnection();
+			secondaryMessagingFactory = null;
+		}
+		if((primary != null) && (secondaryMessagingFactory == null)) {
+			primary.resetConnection();
+			primary = null;
+		}
+	}
 }

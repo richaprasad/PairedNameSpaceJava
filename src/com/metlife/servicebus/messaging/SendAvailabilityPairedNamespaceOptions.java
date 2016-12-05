@@ -58,7 +58,14 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	@Override
 	protected void onNotifyPrimarySendResult(String path, boolean success) {
 		if(success && syphons == null) {
-			syphoneTask.start();
+			System.out.println("syphoneTask state: " + syphoneTask.getState());
+            if(syphoneTask.getState() == Thread.State.NEW) {
+            	syphoneTask.start();
+			} else if(syphoneTask.getState() == Thread.State.WAITING) {
+				synchronized (syphoneTask) {
+					syphoneTask.notify();
+				}
+			}
 		}
 	}
 	
@@ -109,16 +116,39 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 		
 		@Override
 		public void run() {
-			syphons = createSyphon();
+			synchronized (syphoneTask) {
+				while (true) {
+					if(syphons == null) {
+						syphons = createSyphon();
+					} else {
+						try {
+							syphoneTask.wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+			
 		}
 	});
 	
-    public static Thread stopSyphoneTask = new Thread(new Runnable() {
+    public static Thread stopSyphonTask = new Thread(new Runnable() {
 		
 		@Override
 		public void run() {
-			if(syphons != null) {
-				stopSyphon();
+			synchronized (stopSyphonTask) {
+				while(true) {
+					if(syphons != null) {
+						stopSyphon();
+					} else {
+						try {
+							stopSyphonTask.wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
 			}
 		}
 	});
@@ -166,6 +196,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 					e.printStackTrace();
 				}
 			}
+			syphons = null;
 		}
 	}
 }

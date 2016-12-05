@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Random;
 
 import javax.jms.JMSException;
+import javax.xml.datatype.Duration;
 
 import com.metlife.servicebus.NamespaceManager;
 import com.metlife.servicebus.PairedNamespaceConfiguration;
@@ -23,9 +24,10 @@ public class MessagingFactory {
 	protected Thread pingTask;
 	protected Thread pairNamespaceTask;
 	public Thread handleFailureTask;
-	public Thread switchToPrimaryTask;
+//	public Thread switchToPrimaryTask;
+	public Thread faultBehaviourTask;
 	
-	private boolean initialized = false;
+	private static boolean initialized = false;
 	public static boolean primaryDown = false;
 	public static boolean secondaryUp = false;
 	
@@ -72,36 +74,23 @@ public class MessagingFactory {
 		});
 		pairNamespaceTask.start();
 		
-		
 		pingTask = new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
 				synchronized (pingTask) {
-					try {
-						while(messageSender == null) {
-							System.err.println("Message Sender is null, trying to create before ping...");
-							messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE);
-							if(messageSender == null) {
-								try {
-									Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
-								} catch (InterruptedException e1) {
-									System.err.println(e1.getLocalizedMessage());
-								}
+					while(true) {
+						if(primaryDown) {
+							// If primary sender is NULL, try to create a new sender
+							handleCreatePrimarySender(pairedNamespaceOptions.pingPrimaryInterval);
+							handlePing(pairedNamespaceOptions);
+						} else {
+							try {
+								pingTask.wait();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
 							}
 						}
-						while(!messageSender.pingMessage()) {
-							try {
-								Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
-							} catch (InterruptedException e1) {
-								System.err.println(e1.getLocalizedMessage());
-							}
-						} 
-						pairedNamespaceOptions.onNotifyPrimarySendResult(PairedNamespaceConfiguration.PRIMARY_QUEUE, true);
-						primaryDown = false; // Mark primary healthy
-						pingTask.notify();
-					} catch (JMSException e) {
-						e.printStackTrace();
 					}
 				}
 			}
@@ -128,7 +117,7 @@ public class MessagingFactory {
 			}
 		});
 		
-        switchToPrimaryTask = new Thread(new Runnable() {
+       /* switchToPrimaryTask = new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
@@ -147,11 +136,72 @@ public class MessagingFactory {
 					}
 				}
 			}
-		});
+		});*/
 		
+        faultBehaviourTask = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				synchronized (faultBehaviourTask) {
+					// TODO fault behaviour
+				}
+			}
+		});
+        
 		return pairNamespaceTask;
 	}
 	
+	protected void handlePing(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
+		boolean pingSuccessful = false;
+		while(!pingSuccessful) {
+			try {
+				pingSuccessful = messageSender.pingMessage();
+				if(pingSuccessful) {
+					break;
+				}
+			} catch (Exception ex) {
+				if(ex instanceof IllegalStateException) {   // Primary sender is failed
+					try {
+						messageSender.close();      // Close the connection to release resources
+					} catch (JMSException e) {
+						e.printStackTrace();
+					}
+					messageSender = null;
+					
+					// Try to create new primary sender
+					handleCreatePrimarySender(pairedNamespaceOptions.pingPrimaryInterval);
+					try {
+						pingSuccessful = messageSender.pingMessage();
+					} catch (JMSException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			try {
+				Thread.sleep(pairedNamespaceOptions.pingPrimaryInterval.getTimeInMillis(new Date()));
+			} catch (InterruptedException e1) {
+				System.err.println(e1.getLocalizedMessage());
+			}
+		} 
+		pairedNamespaceOptions.onNotifyPrimarySendResult(PairedNamespaceConfiguration.PRIMARY_QUEUE, true);
+		primaryDown = false; // Mark primary healthy
+		pingTask.notify();
+	}
+
+	protected void handleCreatePrimarySender(Duration pingPrimaryInterval) {
+		while(messageSender == null) {
+			System.err.println("Message Sender is null, trying to create before ping...");
+			messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF , PairedNamespaceConfiguration.PRIMARY_QUEUE);
+			if(messageSender == null) {
+				try {
+					Thread.sleep(pingPrimaryInterval.getTimeInMillis(new Date()));
+				} catch (InterruptedException e1) {
+					System.err.println(e1.getLocalizedMessage());
+				}
+			}
+		}
+	}
+
 	public MessageSender createMessageSender(String cf, String queue) {
 		try {
 			return new MessageSender(cf, queue);
@@ -170,7 +220,7 @@ public class MessagingFactory {
 		return null;
 	}
 	
-	public void ResetConnection() {
+	public void resetConnection() {
 		// TODO Reset connection - Fault behavior
 	}
 	
@@ -182,11 +232,11 @@ public class MessagingFactory {
 		} else {
 			// check if all backlog queues exists
 			checkBacklogQueues(pairedNamespaceOptions.secondaryNamespaceManager, pairedNamespaceOptions.backlogQueueCount);
+			System.err.println("Backlog queue created");
 		}
-		System.err.println("Backlog queue created");
 		
 		//  create primary message sender
-		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF12, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO correct connection factory 
+		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE); // TODO correct connection factory 
 		if(messageSender != null) {
 			System.err.println("Message sender created");
 			
@@ -198,7 +248,12 @@ public class MessagingFactory {
 	
 	private void handleFailure(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		// Primary is down, start ping task
-		pingTask.start();
+		System.out.println("PingTask state: " + pingTask.getState());
+		if(pingTask.getState() == Thread.State.NEW) {
+			pingTask.start();
+		} /*else if(pingTask.getState() == Thread.State.WAITING) {
+			pingTask.notify();
+		}*/
 		
 		// Stop Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons != null) {
@@ -241,13 +296,13 @@ public class MessagingFactory {
 		return pairedNamespaceOptions.secondaryMessagingFactory.queueNames.get(index);
 	}
 	
-	private void switchToPrimaryNamespace(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
+	/*private void switchToPrimaryNamespace(SendAvailabilityPairedNamespaceOptions pairedNamespaceOptions) {
 		// Start Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons == null) {
 			SendAvailabilityPairedNamespaceOptions.stopSyphon();
 		}
 		secondaryUp = false;
-	}
+	}*/
 	
 	/**
 	 * @return the messageSender
