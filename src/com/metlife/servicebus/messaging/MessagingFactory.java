@@ -8,7 +8,6 @@ import java.util.Random;
 import javax.jms.JMSException;
 import javax.xml.datatype.Duration;
 
-import com.metlife.servicebus.NamespaceManager;
 import com.metlife.servicebus.PairedNamespaceConfiguration;
 
 /**
@@ -233,12 +232,14 @@ public class MessagingFactory {
 			// TODO Handle case where no queues were created.
 		} else {
 			// check if all backlog queues exists
-			checkBacklogQueues(pairedNamespaceOptions.secondaryNamespaceManager, pairedNamespaceOptions.backlogQueueCount);
+			queueNames = pairedNamespaceOptions.secondaryNamespaceManager
+					.checkBacklogQueues(pairedNamespaceOptions.backlogQueueCount);
 			System.err.println("Backlog queue created");
 		}
 		
 		//  create primary message sender
-		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, PairedNamespaceConfiguration.PRIMARY_QUEUE);  
+		messageSender = createMessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, 
+				PairedNamespaceConfiguration.PRIMARY_QUEUE);  
 		if(messageSender != null) {
 			System.err.println("Message sender created");
 			
@@ -258,7 +259,9 @@ public class MessagingFactory {
 		System.out.println("PingTask state: " + pingTask.getState());
 		if(pingTask.getState() == Thread.State.NEW) {
 			pingTask.start();
-		} 
+		} else if(pingTask.getState() == Thread.State.WAITING) {
+			pingTask.notify();
+		}
 		
 		// Stop Syphon process
 		if(SendAvailabilityPairedNamespaceOptions.syphons != null) {
@@ -275,27 +278,6 @@ public class MessagingFactory {
 		secondaryUp = true;
 	}
 	
-	/**
-	 * Check if all backlog queues exists in namespace
-	 * @param backlogQueueCount 
-	 */
-	private void checkBacklogQueues(NamespaceManager manager, int backlogQueueCount) {
-		queueNames = new ArrayList<String>();
-		
-		List<String> queueList = manager.getQueueNames();
-		
-		for (int i = 0; i < backlogQueueCount; i++) {
-			String queueName = PairedNamespaceConfiguration.BACKLOG_QUEUE_EXT + i;
-			if(queueList.contains(queueName)) {
-				queueNames.add(queueName);
-			} else {
-				// throw error, backlog queue does not exists
-				System.err.print("Backlog queue: " + queueName + " does not exists. Please create in portal.");
-			    System.exit(-1); // TODO Fault behavior
-			}
-		}
-	}
-
 	/**
 	 * Choose a backlog queue randomly
 	 * @param pairedNamespaceOptions

@@ -4,7 +4,9 @@
 package com.metlife.servicebus;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -15,6 +17,7 @@ import com.microsoft.windowsazure.exception.ServiceException;
 import com.microsoft.windowsazure.services.servicebus.ServiceBusConfiguration;
 import com.microsoft.windowsazure.services.servicebus.ServiceBusContract;
 import com.microsoft.windowsazure.services.servicebus.ServiceBusService;
+import com.microsoft.windowsazure.services.servicebus.implementation.EntityStatus;
 import com.microsoft.windowsazure.services.servicebus.models.CreateQueueResult;
 import com.microsoft.windowsazure.services.servicebus.models.ListQueuesOptions;
 import com.microsoft.windowsazure.services.servicebus.models.ListQueuesResult;
@@ -128,6 +131,49 @@ public class NamespaceManager {
 			queuenames.add(queueInfo.getPath());
 		}
 		return queuenames;
+	}
+	
+	/**
+	 * Retrieves queue names.
+	 * @return
+	 */
+	private Map<String, QueueInfo> getQMap(List<QueueInfo> queues) {
+		Map<String, QueueInfo> queuenames = new HashMap<String, QueueInfo>();
+		for (QueueInfo queueInfo : queues) {
+			queuenames.put(queueInfo.getPath(), queueInfo);
+		}
+		return queuenames;
+	}
+	
+	/**
+	 * Check if all backlog queues exists in namespace
+	 * @param backlogQueueCount 
+	 */
+	public List<String> checkBacklogQueues(int backlogQueueCount) {
+		List<String> queueNames = new ArrayList<String>();
+		
+		List<QueueInfo> queueList = getQueues();
+		Map<String, QueueInfo> queueMap = getQMap(queueList);
+		
+		for (int i = 0; i < backlogQueueCount; i++) {
+			String queueName = PairedNamespaceConfiguration.BACKLOG_QUEUE_EXT + i;
+			QueueInfo queueInfo = queueMap.get(queueName);
+			if(queueInfo != null) {
+				EntityStatus status = queueInfo.getStatus();
+				if(status == EntityStatus.ACTIVE) {
+					queueNames.add(queueName);
+				} else {
+					// throw error, backlog queue is not available
+					System.err.print("Backlog queue: " + queueName + " is not active. Please check status in portal.");
+				    System.exit(-1); // TODO Fault behavior
+				}
+			} else {
+				// throw error, backlog queue does not exists
+				System.err.print("Backlog queue: " + queueName + " does not exists. Please create in portal.");
+			    System.exit(-1); // TODO Fault behavior
+			}
+		}
+		return queueNames;
 	}
 	
 	/**
