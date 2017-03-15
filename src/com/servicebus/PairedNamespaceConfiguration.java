@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.metlife.servicebus;
+package com.servicebus;
 
 
 /**

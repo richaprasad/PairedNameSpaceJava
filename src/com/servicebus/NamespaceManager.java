@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.metlife.servicebus;
+package com.servicebus;
 
 import java.util.ArrayList;
 import java.util.HashMap;

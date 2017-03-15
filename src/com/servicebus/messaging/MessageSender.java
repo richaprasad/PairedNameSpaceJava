@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.metlife.servicebus.messaging;
+package com.servicebus.messaging;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +22,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import com.metlife.servicebus.PairedNamespaceConfiguration;
-import com.metlife.servicebus.messaging.util.AppConstants;
+import com.servicebus.PairedNamespaceConfiguration;
+import com.servicebus.messaging.util.AppConstants;
 
 
 /**

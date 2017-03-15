@@ -1,15 +1,15 @@
 /**
  * 
  */
-package com.metlife.servicebus;
+package com.servicebus;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.Duration;
 
-import com.metlife.servicebus.messaging.MessageSender;
-import com.metlife.servicebus.messaging.MessagingFactory;
-import com.metlife.servicebus.messaging.SendAvailabilityPairedNamespaceOptions;
+import com.servicebus.messaging.MessageSender;
+import com.servicebus.messaging.MessagingFactory;
+import com.servicebus.messaging.SendAvailabilityPairedNamespaceOptions;
 
 /**
  * @author rprasad017

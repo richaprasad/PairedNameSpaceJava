@@ -1,11 +1,11 @@
 /**
  * 
  */
-package com.metlife.servicebus.messaging;
+package com.servicebus.messaging;
 
 import javax.xml.datatype.Duration;
 
-import com.metlife.servicebus.NamespaceManager;
+import com.servicebus.NamespaceManager;
 
 /**
  * @author rprasad017

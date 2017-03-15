@@ -1,4 +1,4 @@
-package com.metlife.servicebus.messaging;
+package com.servicebus.messaging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.Random;
 import javax.jms.JMSException;
 import javax.xml.datatype.Duration;
 
-import com.metlife.servicebus.PairedNamespaceConfiguration;
+import com.servicebus.PairedNamespaceConfiguration;
 
 /**
  * @author rprasad017

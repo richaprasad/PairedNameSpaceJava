@@ -1,4 +1,4 @@
-package com.metlife.servicebus.messaging;
+package com.servicebus.messaging;
 /**
  * 
  */
@@ -21,14 +21,11 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import com.metlife.servicebus.PairedNamespaceConfiguration;
-import com.metlife.servicebus.messaging.util.AppConstants;
-
 /**
  * @author rprasad017
- * Syphon
+ * Class to receive messages asynchronously
  */
-public class SyphonProcess implements MessageListener, ExceptionListener {
+public class MessageReceiver implements MessageListener, ExceptionListener {
 	
 	private ConnectionFactory cf;
 	private Connection connection;
@@ -38,9 +35,6 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
     
     private String connectionfactory;
     private String queueName;
-    
-    private MessageSender sender;
-    private boolean active = true;
 	
 	/**
 	 * @throws IOException 
@@ -49,15 +43,11 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 	 * @throws SecretKeyInitException 
 	 * 
 	 */
-	public SyphonProcess(String connectionfactory, String queueName) throws IOException, NamingException, JMSException {
+	public MessageReceiver(String connectionfactory, String queueName) throws IOException, NamingException, JMSException {
 		this.connectionfactory = connectionfactory;
 		this.queueName = queueName;
 		
-		sender = new MessageSender(PairedNamespaceConfiguration.PRIMARY_SBCF, 
-				PairedNamespaceConfiguration.PRIMARY_QUEUE); 	
-		
 		initReceiver();
-		System.err.println("Syphon process is ready");
 	}
 	
 	private void initReceiver() throws IOException, NamingException, JMSException {
@@ -80,13 +70,9 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 	public void onMessage(Message message) {
 		try {
 			if (message instanceof TextMessage) {
-				TextMessage msg = restoreProperties((TextMessage) message);
-				
-				sender.sendMessage(msg);
-				
-				System.out.println("Syphon message: "+ msg.getText());
+				TextMessage msg = (TextMessage) message;
+				System.out.println("Received: "+ msg.getText());
 				message.acknowledge();
-				msg = null;
 			}
         } catch (Exception e) {
         	e.printStackTrace();
@@ -95,15 +81,40 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
 
 	@Override
 	public void onException(JMSException exception) {
-		if(active) {
-			System.err.println("Error in connection, Retrying to connect...");
-			try {
-				initializeConnection();
-			} catch (JMSException e) {
-				System.err.println(e.getLocalizedMessage());
-			}
+		System.err.println("Error in receiver connection, Retrying to connect...");
+		try {
+			close();
+		} catch (JMSException e1) {	
+			// We will get an Exception anyway, since the connection to the server is
+            // broken, but close() frees up resources associated with the connection
+		}
+		
+		try {
+			initializeConnection();
+		} catch (JMSException e) {
+			System.err.println(e.getLocalizedMessage());
 		}
 	}
+	
+	 /**
+     * Close all active connections
+     * @throws JMSException
+     */
+	public void close() throws JMSException {
+        if(receiver != null) {
+        	receiver.setMessageListener(null);
+        	receiver.close();
+        }
+        if(receiveSession != null) {
+        	receiveSession.close();
+        }
+    	if(connection!= null) {
+    		connection.close();
+    	}
+    	connection = null;
+    	receiveSession = null;
+    	receiver = null;
+    }
 
 	private void initializeConnection() throws JMSException {
 		 // Create Connection
@@ -116,46 +127,8 @@ public class SyphonProcess implements MessageListener, ExceptionListener {
         connection.start();
 	}
 	
-	/**
-	 * Restore the Modified message property from the backlog queue
-	 * @param message
-	 * @throws JMSException
-	 */
-	public TextMessage restoreProperties(TextMessage message) throws JMSException {
-		TextMessage newMsg = sender.createPlainTextMessage();
-		newMsg.setJMSMessageID(message.getJMSMessageID());
-		newMsg.setJMSCorrelationID(message.getJMSMessageID());
-		newMsg.setText(message.getText());
-		if(message.propertyExists(AppConstants.TIME_TO_LIVE_PROP)) {
-			newMsg.setJMSExpiration(message.getLongProperty(AppConstants.TIME_TO_LIVE_PROP));
-		}
-		return newMsg;
+	public static void main(String[] args) throws IOException, NamingException, JMSException {
+		new MessageReceiver("SBCF", "QUEUE");
 	}
-	
-	/**
-	 * Close syphon process
-	 * @throws JMSException
-	 */
-	public void closeSyphon() throws JMSException {
-		active = false;
-		if(connection != null) {
-			connection.stop();
-		}
-		if(receiver != null) {
-			receiver.close();
-			receiver = null;
-		}
-		if(receiveSession != null) {
-			receiveSession.close();
-			receiveSession = null;
-		}
-		if(connection != null) {
-			connection.close();
-			connection = null;
-		}
-		if(sender != null) {
-			sender.close();
-			sender = null;
-		}
-	}
+
 }

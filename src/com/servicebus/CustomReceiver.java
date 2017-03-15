@@ -1,14 +1,14 @@
 /**
  * 
  */
-package com.metlife.servicebus;
+package com.servicebus;
 
 import java.io.IOException;
 
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
-import com.metlife.servicebus.messaging.MessageReceiver;
+import com.servicebus.messaging.MessageReceiver;
 
 /**
  * @author rprasad017

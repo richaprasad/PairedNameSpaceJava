@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.metlife.servicebus.messaging;
+package com.servicebus.messaging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +11,8 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.Duration;
 
-import com.metlife.servicebus.NamespaceManager;
-import com.metlife.servicebus.PairedNamespaceConfiguration;
+import com.servicebus.NamespaceManager;
+import com.servicebus.PairedNamespaceConfiguration;
 
 /**
  * @author rprasad017
@@ -42,7 +42,7 @@ public class SendAvailabilityPairedNamespaceOptions extends	PairedNamespaceOptio
 	}
 
 	/* (non-Javadoc)
-	 * @see com.metlife.servicebus.messaging.PairedNamespaceOptions#onNotifyPrimarySendResult(java.lang.String, boolean)
+	 * @see com.servicebus.messaging.PairedNamespaceOptions#onNotifyPrimarySendResult(java.lang.String, boolean)
 	 */
 	@Override
 	protected void onNotifyPrimarySendResult(String path, boolean success) {
